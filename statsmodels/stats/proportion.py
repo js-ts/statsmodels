@@ -1230,7 +1230,7 @@ def proportions_chisquare_pairscontrol(count, nobs, value=None,
 def confint_proportions_2indep(count1, nobs1, count2, nobs2, method=None,
                                compare='diff', alpha=0.05, correction=True):
     """
-    Confidence intervals for comparing two independent proportions
+    Confidence intervals for comparing two independent proportions.
 
     This assumes that we have two independent binomial samples.
 
@@ -1274,6 +1274,11 @@ def confint_proportions_2indep(count1, nobs1, count2, nobs2, method=None,
     Returns
     -------
     low, upp
+
+    See Also
+    --------
+    test_proportions_2indep
+    tost_proportions_2indep
 
     Notes
     -----
@@ -1442,6 +1447,9 @@ def _shrink_prob(count1, nobs1, count2, nobs2, shrink_factor=2,
         false.
 
     """
+    vectorized = any(np.size(i) > 1 for i in [count1, nobs1, count2, nobs2])
+    if vectorized:
+        raise ValueError("function is not vectorized")
     nobs_col = np.array([count1 + count2, nobs1 - count1 + nobs2 - count2])
     nobs_row = np.array([nobs1, nobs2])
     nobs = nobs1 + nobs2
@@ -1654,8 +1662,13 @@ def test_proportions_2indep(count1, nobs1, count2, nobs2, value=None,
         Count for the second sample.
     nobs2 : int
         Sample size for the second sample.
+    value : float
+        Value of the difference, risk ratio or odds ratio of 2 independent
+        proportions under the null hypothesis.
+        Default is equal proportions, 0 for diff and 1 for risk-ratio and for
+        odds-ratio.
     method : string
-        Method for computing confidence interval. If method is None, then a
+        Method for computing the hypothesis test. If method is None, then a
         default method is used. The default might change as more methods are
         added.
 
@@ -1686,11 +1699,11 @@ def test_proportions_2indep(count1, nobs1, count2, nobs2, value=None,
            correction ``nobs / (nobs - 1)`` as in Miettinen Nurminen 1985
 
     compare : {'diff', 'ratio' 'odds-ratio'}
-        If compare is `diff`, then the confidence interval is for
-        diff = p1 - p2.
-        If compare is `ratio`, then the confidence interval is for the
+        If compare is `diff`, then the hypothesis test is for the risk
+        difference diff = p1 - p2.
+        If compare is `ratio`, then the hypothesis test is for the
         risk ratio defined by ratio = p1 / p2.
-        If compare is `odds-ratio`, then the confidence interval is for the
+        If compare is `odds-ratio`, then the hypothesis test is for the
         odds-ratio defined by or = p1 / (1 - p1) / (p2 / (1 - p2)
     alternative : {'two-sided', 'smaller', 'larger'}
         alternative hypothesis, which can be two-sided or either one of the
@@ -1718,10 +1731,21 @@ def test_proportions_2indep(count1, nobs1, count2, nobs2, value=None,
         other attributes :
             additional information about the hypothesis test
 
+    See Also
+    --------
+    tost_proportions_2indep
+    confint_proportions_2indep
+
     Notes
     -----
     Status: experimental, API and defaults might still change.
         More ``methods`` will be added.
+
+    The current default methods are
+
+    - 'diff': 'agresti-caffo',
+    - 'ratio': 'log-adjusted',
+    - 'odds-ratio': 'logit-adjusted'
 
     """
     method_default = {'diff': 'agresti-caffo',
@@ -1740,6 +1764,9 @@ def test_proportions_2indep(count1, nobs1, count2, nobs2, value=None,
     if value is None:
         # TODO: odds ratio does not work if value=1 for score test
         value = 0 if compare == 'diff' else 1
+
+    count1, nobs1, count2, nobs2 = map(np.asarray,
+                                       [count1, nobs1, count2, nobs2])
 
     p1 = count1 / nobs1
     p2 = count2 / nobs2
@@ -1910,7 +1937,7 @@ def tost_proportions_2indep(count1, nobs1, count2, nobs2, low, upp,
     low, upp :
         equivalence margin for diff, risk ratio or odds ratio
     method : string
-        method for computing confidence interval. If method is None, then a
+        method for computing the hypothesis test. If method is None, then a
         default method is used. The default might change as more methods are
         added.
 
@@ -1938,11 +1965,11 @@ def tost_proportions_2indep(count1, nobs1, count2, nobs2, low, upp,
             correction ``nobs / (nobs - 1)`` as in Miettinen Nurminen 1985
 
     compare : string in ['diff', 'ratio' 'odds-ratio']
-        If compare is `diff`, then the confidence interval is for
+        If compare is `diff`, then the hypothesis test is for
         diff = p1 - p2.
-        If compare is `ratio`, then the confidence interval is for the
+        If compare is `ratio`, then the hypothesis test is for the
         risk ratio defined by ratio = p1 / p2.
-        If compare is `odds-ratio`, then the confidence interval is for the
+        If compare is `odds-ratio`, then the hypothesis test is for the
         odds-ratio defined by or = p1 / (1 - p1) / (p2 / (1 - p2).
     correction : bool
         If correction is True (default), then the Miettinen and Nurminen
@@ -1958,9 +1985,17 @@ def tost_proportions_2indep(count1, nobs1, count2, nobs2, low, upp,
     t1 : test results
         results instance for one-sided hypothesis at the upper margin
 
+    See Also
+    --------
+    test_proportions_2indep
+    confint_proportions_2indep
+
     Notes
     -----
     Status: experimental, API and defaults might still change.
+
+    The TOST equivalence test delegates to `test_proportions_2indep` and has
+    the same method and comparison options.
 
     """
 
@@ -1975,9 +2010,13 @@ def tost_proportions_2indep(count1, nobs1, count2, nobs2, low, upp,
                                   correction=correction,
                                   return_results=True)
 
-    idx_max = 0 if tt1.pvalue < tt2.pvalue else 1
-    res = HolderTuple(statistic=[tt1.statistic, tt2.statistic][idx_max],
-                      pvalue=[tt1.pvalue, tt2.pvalue][idx_max],
+    # idx_max = 1 if t1.pvalue < t2.pvalue else 0
+    idx_max = np.asarray(tt1.pvalue < tt2.pvalue, int)
+    statistic = np.choose(idx_max, [tt1.statistic, tt2.statistic])
+    pvalue = np.choose(idx_max, [tt1.pvalue, tt2.pvalue])
+
+    res = HolderTuple(statistic=statistic,
+                      pvalue=pvalue,
                       compare=compare,
                       method=method,
                       results_larger=tt1,

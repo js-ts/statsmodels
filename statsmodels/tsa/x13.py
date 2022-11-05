@@ -54,8 +54,9 @@ def _find_x12(x12path=None, prefer_x13=True):
     """
     global _binary_names
     if x12path is not None and x12path.endswith(_binary_names):
-        # remove binary from path if given
-        x12path = os.path.dirname(x12path)
+        # remove binary from path if path is not a directory
+        if not os.path.isdir(x12path):
+            x12path = os.path.dirname(x12path)
 
     if not prefer_x13:  # search for x12 first
         _binary_names = _binary_names[::-1]
@@ -139,7 +140,7 @@ def _make_automdl_options(maxorder, maxdiff, diff):
 
 def _make_var_names(exog):
     if hasattr(exog, "name"):
-        var_names = exog.name
+        var_names = [exog.name]
     elif hasattr(exog, "columns"):
         var_names = exog.columns
     else:

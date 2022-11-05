@@ -651,6 +651,15 @@ class TestGLS_alt_sigma(CheckRegressionResults):
             sigma=np.ones((n - 1, n - 1)),
         )
 
+    @pytest.mark.skip("Test does not raise but should")
+    def test_singular_sigma(self):
+        n = len(self.endog)
+        sigma = np.ones((n, n)) + np.diag(np.ones(n))
+        sigma[0, 1] = sigma[1, 0] = 2
+        assert np.linalg.matrix_rank(sigma) == n - 1
+        with pytest.raises(np.linalg.LinAlgError):
+            GLS(self.endog, self.exog, sigma=sigma)
+
 
 # FIXME: do not leave commented-out, use or move/remove
 #    def check_confidenceintervals(self, conf1, conf2):
@@ -1099,7 +1108,7 @@ def test_fvalue_const_only():
     rs = np.random.RandomState(12345)
     x = rs.randint(0, 3, size=30)
     x = pd.get_dummies(pd.Series(x, dtype="category"), drop_first=False)
-    x.iloc[:, 0] = 1
+    x[x.columns[0]] = 1
     y = np.dot(x, [1.0, 2.0, 3.0]) + rs.normal(size=30)
     res = OLS(y, x, hasconst=True).fit(cov_type="HC1")
     assert not np.isnan(res.fvalue)

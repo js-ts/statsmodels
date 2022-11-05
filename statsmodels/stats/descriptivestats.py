@@ -1,4 +1,5 @@
 from statsmodels.compat.pandas import Appender, is_numeric_dtype
+from statsmodels.compat.scipy import SP_LT_19
 
 from typing import Sequence, Union
 
@@ -391,7 +392,13 @@ class Description:
             q = stats.norm.ppf(1.0 - self._alpha / 2)
 
         def _mode(ser):
-            mode_res = stats.mode(ser.dropna())
+            if SP_LT_19:
+                mode_res = stats.mode(ser.dropna())
+            else:
+                mode_res = stats.mode(ser.dropna(), keepdims=True)
+            # Changes in SciPy 1.10
+            if np.isscalar(mode_res[0]):
+                return float(mode_res[0]), mode_res[1]
             if mode_res[0].shape[0] > 0:
                 return [float(val) for val in mode_res]
             return np.nan, np.nan

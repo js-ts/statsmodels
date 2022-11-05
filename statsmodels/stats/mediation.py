@@ -208,7 +208,7 @@ class Mediation:
         else:
             # Need to regenerate the model exog
             df = self.mediator_model.data.frame.copy()
-            df.loc[:, self.exposure] = exposure
+            df[self.exposure] = exposure
             for vname in self.moderators:
                 v = self.moderators[vname]
                 df.loc[:, vname] = v
@@ -236,11 +236,11 @@ class Mediation:
         else:
             # Need to regenerate the model exog
             df = self.outcome_model.data.frame.copy()
-            df.loc[:, self.exposure] = exposure
-            df.loc[:, self.mediator] = mediator
+            df[self.exposure] = exposure
+            df[self.mediator] = mediator
             for vname in self.moderators:
                 v = self.moderators[vname]
-                df.loc[:, vname] = v
+                df[vname] = v
             klass = self.outcome_model.__class__
             init_kwargs = self.outcome_model._get_init_kwds()
             model = klass.from_formula(data=df, **init_kwargs)
@@ -281,7 +281,9 @@ class Mediation:
             outcome_result = self._fit_model(self.outcome_model, self._outcome_fit_kwargs)
             mediator_result = self._fit_model(self.mediator_model, self._mediator_fit_kwargs)
         elif not method.startswith("boot"):
-            raise("method must be either 'parametric' or 'bootstrap'")
+            raise ValueError(
+                "method must be either 'parametric' or 'bootstrap'"
+            )
 
         indirect_effects = [[], []]
         direct_effects = [[], []]

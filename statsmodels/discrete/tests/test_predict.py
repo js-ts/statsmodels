@@ -153,7 +153,7 @@ class CheckPredict():
         dia = res1.get_diagnostic(y_max=21)
         res_chi2 = dia.test_chisquare_prob(bin_edges=np.arange(4))
         assert_equal(res_chi2.diff1.shape[1], 3)
-        assert_equal(dia.probs_predicted.shape[1], 21)
+        assert_equal(dia.probs_predicted.shape[1], 22)
 
         try:
             dia.plot_probs(upp_xlim=20)
@@ -355,7 +355,6 @@ def test_distr(case):
     if issubclass(cls_model, BinaryModel):
         y = (y > 0.5).astype(float)
 
-    print("\n\n", cls_model, kwds)
     mod = cls_model(y, x, **kwds)
     # res = mod.fit()
     params_dgp = params

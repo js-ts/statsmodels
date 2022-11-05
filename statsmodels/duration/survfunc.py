@@ -764,7 +764,7 @@ def plot_survfunc(survfuncs, ax=None):
     >>> ax = fig.get_axes()[0]
     >>> ax.set_position([0.1, 0.1, 0.64, 0.8])
     >>> ha, lb = ax.get_legend_handles_labels()
-    >>> leg = fig.legend((ha[0], ha[1]), (lb[0], lb[1]), 'center right')
+    >>> leg = fig.legend((ha[0], ha[1]), (lb[0], lb[1]), loc='center right')
 
     Change the line colors:
 
@@ -781,7 +781,7 @@ def plot_survfunc(survfuncs, ax=None):
     # If we have only a single survival function to plot, put it into
     # a list.
     try:
-        assert(type(survfuncs[0]) is SurvfuncRight)
+        assert type(survfuncs[0]) is SurvfuncRight
     except:
         survfuncs = [survfuncs]
 

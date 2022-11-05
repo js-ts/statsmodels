@@ -13,15 +13,12 @@ import numpy as np
 
 from statsmodels.tools.decorators import cache_readonly
 
-from statsmodels.stats._diagnostic_other import (
-    dispersion_poisson,
-    # dispersion_poisson_generic,
-    )
-
 from statsmodels.stats.diagnostic_gen import (
     test_chisquare_binning
     )
 from statsmodels.discrete._diagnostics_count import (
+    test_poisson_dispersion,
+    # _test_poisson_dispersion_generic,
     test_poisson_zeroinflation_jh,
     test_poisson_zeroinflation_broek,
     test_poisson_zeros,
@@ -37,7 +34,10 @@ class CountDiagnostic:
 
     Parameters
     ----------
-    results : PoissonResults instance
+    results : Results instance of a count model.
+    y_max : int
+        Largest count to include when computing predicted probabilities for
+        counts. Default is the largest observed count.
 
     """
 
@@ -48,7 +48,7 @@ class CountDiagnostic:
     @cache_readonly
     def probs_predicted(self):
         if self.y_max is not None:
-            kwds = {"y_values": np.arange(self.y_max)}
+            kwds = {"y_values": np.arange(self.y_max + 1)}
         else:
             kwds = {}
         return self.results.predict(which="prob", **kwds)
@@ -77,7 +77,7 @@ class CountDiagnostic:
         -----
         Warning: The current default can have many empty or nearly empty bins.
         The default number of bins is given by max(endog).
-        Currently it is recommended to limit the nuber of bins explicitly,
+        Currently it is recommended to limit the number of bins explicitly,
         see Examples below.
         Binning will change in future and automatic binning will be added.
 
@@ -94,7 +94,7 @@ class CountDiagnostic:
         `test_chisquare_prob(bin_edges=np.arange(3))`
 
         `test_chisquare_prob(bin_edges=np.arange(10))` tests the hypothesis
-        that the frequences for counts up to 7 correspond to the estimated
+        that the frequencies for counts up to 7 correspond to the estimated
         Poisson distributions.
         In this case, edges are 0, ..., 9 which defines 9 bins for
         counts 0 to 8. The last bin is dropped, so the joint test hypothesis is
@@ -147,7 +147,7 @@ class PoissonDiagnostic(CountDiagnostic):
         -------
         dispersion results
         """
-        res = dispersion_poisson(self.results)
+        res = test_poisson_dispersion(self.results)
         return res
 
     def test_poisson_zeroinflation(self, method="prob", exog_infl=None):
